@@ -14,19 +14,18 @@ class CheckCubamAnnotationModel(CheckAnnotationModel):
 
     #Changes imgIDs and workerIDs to numbers from 0...len instead of real
     #ids.
-    def subSample(self, data):
+    def subSample(self, data, groundTruth):
         
         wkrIDs = set(wrkID for imgID in data for wrkID in data[imgID])
         wkrId2Idx = dict((id, idx) for (idx, id) in enumerate(wkrIDs))
 
         for i, imgID in enumerate(data):
             data[i] = data.pop(imgID)
+            groundTruth[i] = groundTruth.pop(imgID)
             for wrkID in list(data[i]):
                 data[i][wkrId2Idx[wrkID]] = data[i].pop(wrkID)
 
-        return data
-
-
+        return [data, groundTruth]
 
 
 
@@ -45,13 +44,17 @@ def main():
     #and the corresponding values are dictionaries with image ids as keys
     #and corresponding labels as values.
     incompleteExamples = modelCheck.formatExamples(yaml.load(open(fileName)))
-
+    groundTruth = yaml.load(open('bluebirds/gt.yaml', 'r'))
     #used to subsample the data, used to try and get past segmentation fault.
 
-    #incompleteExamples = modelCheck.subSample(incompleteExamples)
+    [incompleteExamples, groundTruth] = modelCheck.subSample(incompleteExamples, groundTruth)
     
+    for id in incompleteExamples:
+        print len(incompleteExamples[id])
 
     [completedExamples, labels] = model.crowdSourceLabels(incompleteExamples)
+    print(modelCheck.correctnessFactor(completedExamples, groundTruth))
+    print(modelCheck.annotationStatistics(labels))    
 
 
 

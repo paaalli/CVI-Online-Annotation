@@ -8,16 +8,30 @@ class CheckSimpleAnnotationModel(CheckAnnotationModel):
     def __init__(self):
         pass
 
-    def createSyntheticDataset(self, size):
+    def createSyntheticDataset(self, size, lambdaf,nrLabels = 40):
         y = dict()
         x = dict()
+        lambdafp = lambdaf[0]
+        lambdafn = lambdaf[1]
+
         factorOfPositiveTruths = random.random()
         for i in range(0,size):
-            x[i] = None
             if (random.random() < factorOfPositiveTruths):
                 y[i] = 1
             else:
                 y[i] = 0
+            x[i] = {}
+            for j in range(0,40):
+                if y[i]:
+                    if random.random() > lambdafn:
+                        x[i][j] = 1
+                    else:
+                        x[i][j] = 0
+                else:
+                    if random.random() > lambdafp:
+                        x[i][j] = 0
+                    else:
+                        x[i][j] = 1
         return [x,y]
 
 
@@ -38,10 +52,13 @@ class CheckSimpleAnnotationModel(CheckAnnotationModel):
 def main():
 
     #Checks for synthesized data
+    lambdafp = 0.15
+    lambdafn = 0.15
+    lambdaf = [lambdafp, lambdafn]
     modelCheck = CheckSimpleAnnotationModel()
-    model = SimpleAnnotationModel.SimpleAnnotationModel(1)
-    [uncompletedExamples, groundTruth] = modelCheck.createSyntheticDataset(1000)
-    [completedExamples, labels] = model.crowdsourceLabels(uncompletedExamples, groundTruth)
+    [incompleteExamples, groundTruth] = modelCheck.createSyntheticDataset(1000,lambdaf)
+    model = SimpleAnnotationModel.SimpleAnnotationModel(lambdaf)  
+    [completedExamples, labels] = model.crowdSourceLabels(incompleteExamples)
     print(modelCheck.correctnessFactor(completedExamples, groundTruth))
     print(modelCheck.annotationStatistics(labels))
 
@@ -52,10 +69,9 @@ def main():
     labelStream = open("bluebirds/labels.yaml", 'r')
     data = yaml.load(labelStream)
 
-    model = SimpleAnnotationModel.SimpleAnnotationModel(2)
-    availableLabels = modelCheck.formatRealDataset(modelCheck.formatExamples(data))
-    print availableLabels
-    [completedExamples, labels] = model.crowdsourceLabels(availableLabels, groundTruth)
+    incompleteExamples = modelCheck.formatExamples(data)
+    [completedExamples, labels] = model.crowdSourceLabels(incompleteExamples)
+
     print(modelCheck.correctnessFactor(completedExamples, groundTruth))
     print(modelCheck.annotationStatistics(labels))
 
