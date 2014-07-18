@@ -6,8 +6,6 @@ from AnnotationModel import *
 
 class CubamAnnotationModel(AnnotationModel):
     
-    #stoppingRatio: stoppingRatio for sequential probability ratio test
-    stoppingRatio = 3
 
     #bernoulli prior for py=1)
     beta = 0.5
@@ -17,21 +15,24 @@ class CubamAnnotationModel(AnnotationModel):
 
     #flag = 0 or 1, 0 means we're getting annotations from an already labelled dataset
     #1 means we're getting annotations from MTTurk.
-    def __init__(self, dirName, flag = 0):
+    def __init__(self, dirName, stoppingRatio = 5, mode = 'cv', flag = 0):
+        
         self.flag = flag
-        self.dirName = dirName
-        self.cubamDataFile = '%s/data.txt' % self.dirName
+        self.cubamDataFile = '%s/data.txt' % dirName
+
+        super(CubamAnnotationModel, self).__init__(dirName, stoppingRatio, mode)
 
 
 
-    def optimiseProbability(self, labels):
+    def optimiseProbability(self, labels, cvProb = None):
         
         self.__saveData(labels)
         model = Binary1dSignalModel(filename = self.cubamDataFile)
         model.optimize_param()
+        #if(not cvProb == None):
+        #    model.optimize_param_cv(cvProb)
+
         x = model.get_image_param()
-
-
         #If xi > 0 we estimate that the label is y == 1, otherwise  y == 0
         #we append the label estimation to the x value.
         for imgID in x:
@@ -66,7 +67,7 @@ class CubamAnnotationModel(AnnotationModel):
         fout = open(self.cubamDataFile, 'w')
         #temporary filewriting, gonna change cubam toolbox later.
         wkrIDs = set(wrkID for imgID in labels for wrkID in labels[imgID])
-        total = sum(len(labels[imgID]) for imgID in labels)
+        total = self.getNrOfLabels(labels)
         fout.write("%d %d %d\n" % (len(labels), len(wkrIDs), total))
 
         for imgID in labels:
@@ -74,11 +75,14 @@ class CubamAnnotationModel(AnnotationModel):
                 fout.write("%d %d %d\n" % (imgID, wrkID, labels[imgID][wrkID]))
         fout.close()
         
-    def getOneNewWorkerLabelPerImage(self, incompleteExamples, labels):
+    def getOneNewWorkerLabelPerImage(self, incompleteExamples, insufficientExamples, labels):
         if self.flag:
             return self.__getLabelsFromMTTurk(incompleteExamples, labels)
         else:
-            return super(CubamAnnotationModel, self).getOneNewWorkerLabelPerImage(incompleteExamples, labels)
+            return super(CubamAnnotationModel, self).getOneNewWorkerLabelPerImage(incompleteExamples, insufficientExamples, labels)
 
     def __getLabelsFromMTTurk(self, incompleteExamples, labels):
         pass
+
+    def getNrOfLabels(self, data):
+        return   sum(len(data[imgID]) for imgID in data)

@@ -15,11 +15,9 @@ class SimpleAnnotationModel(AnnotationModel):
     #defining prior for p(y|x)
     pyx = 0.5
 
-    #stoppingRatio: stoppingRatio for sequential probability ratio test
-    stoppingRatio = 15
 
 
-    def __init__(self, lambdaf = [0.05, 0.05]):
+    def __init__(self, dirName, lambdaf = [0.05, 0.05], stoppingRatio = 5, mode = 'cv'):
 
         self.lambdafp = lambdaf[0]
         self.lambdafn = lambdaf[1]
@@ -27,29 +25,8 @@ class SimpleAnnotationModel(AnnotationModel):
         self.lambdatn = 1 - self.lambdafp
 
 
+        super(SimpleAnnotationModel, self).__init__(dirName, stoppingRatio, mode)
 
-    #MODEL CHECKING. This function uses a simple model to simulate annotators. Annotations are based on ground
-    #truth labels and the probabilities lambdatp, lambatn, lambdafp, lambdafn (class variables). Since this model
-    #uses ground truth label it is for testing purposes only.
-
-    #For synthetic data, dataExamples are unlabelled, for real data, dataExampls are labelled.
-    def getOneNewWorkerLabelPerImage(self, incompleteExamples, labels):
-
-        insufficientExamples = dict()
-
-        for imgID in incompleteExamples:
-            if len(incompleteExamples[imgID]) != 0:
-                workerKey = random.choice(list(incompleteExamples[imgID].keys()))
-                labels[imgID][workerKey] = incompleteExamples[imgID][workerKey]
-                del incompleteExamples[imgID][workerKey]
-            else:
-                print("Annotations available for image label " + str(imgID) + " are not sufficient to predict with confidence")
-                insufficientExamples[imgID] = True
-        
-        for x in insufficientExamples:
-            del incompleteExamples[x]
-
-        return labels
 
    
     #returns: y* = argmax(y) p(y|x)*PI(p(zij|y) for zi1..zin) / sigma(p(y'|x)*PI(p(zij|y') for zi1...zin) for all y),
@@ -57,7 +34,9 @@ class SimpleAnnotationModel(AnnotationModel):
     #         p(!y*|x,z)
     #Model checking. For now only implements optimization of binary labels
     #imageLabels: list of labels for a certain image
-    def optimiseProbability(self, labels):
+
+    #TODO: Work the cvProb into the probability.
+    def optimiseProbability(self, labels, cvProb = None):
 
         predictions = {}
         p1 = self.pyx
@@ -78,7 +57,6 @@ class SimpleAnnotationModel(AnnotationModel):
             else:
                 pyCond = py0 / pSum
                 predictions[imgID] = [pyCond, 0]
-
         return predictions
 
 

@@ -1,1 +1,0 @@
-from CheckCubamAnnotationModel import CheckCubamAnnotationModel

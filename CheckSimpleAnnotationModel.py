@@ -63,19 +63,6 @@ def main():
     print(modelCheck.annotationStatistics(labels))
 
 
-    #Checks for real data
-    gtStream = open("bluebirds/gt.yaml", 'r')
-    groundTruth = yaml.load(gtStream)
-    labelStream = open("bluebirds/labels.yaml", 'r')
-    data = yaml.load(labelStream)
-
-    incompleteExamples = modelCheck.formatExamples(data)
-    [completedExamples, labels] = model.crowdSourceLabels(incompleteExamples)
-
-    print(modelCheck.correctnessFactor(completedExamples, groundTruth))
-    print(modelCheck.annotationStatistics(labels))
-
-
 
 
 if __name__ == "__main__":
