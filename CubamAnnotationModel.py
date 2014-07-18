@@ -29,8 +29,8 @@ class CubamAnnotationModel(AnnotationModel):
         self.__saveData(labels)
         model = Binary1dSignalModel(filename = self.cubamDataFile)
         model.optimize_param()
-        #if(not cvProb == None):
-        #    model.optimize_param_cv(cvProb)
+        if(cvProb == 'cv'):
+            model.optimize_param_cv(cvProb)
 
         x = model.get_image_param()
         #If xi > 0 we estimate that the label is y == 1, otherwise  y == 0
