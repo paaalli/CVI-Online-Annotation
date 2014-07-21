@@ -114,7 +114,7 @@ class AnnotationModel(object):
 
     def trainComputerVision(self, completedExamples, imgIDx2ID):
 
-        linearSVC = SVC(kernel = 'linear', probability = True)
+        linearSVC = SVC(kernel = 'linear', probability = True, max_iter = 30)
         y = []
         x = []
         for imgIDx in completedExamples:
@@ -122,6 +122,8 @@ class AnnotationModel(object):
             y.append(completedExamples[imgIDx])
             x.append(np.concatenate((self.features[str(imgID)], \
                     self.scores[str(imgID)]), axis = 0))
+
+        print completedExamples
 
         linearSVC.fit(x,y)
 

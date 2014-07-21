@@ -21,7 +21,7 @@ cubamModelNoCV = CubamAnnotationModel(dataDir, mode = 'norm')
 simpleModel = SimpleAnnotationModel(dataDir)
 
 #numWrkList = [2,4,6,8,10,12,14,16,18,20]
-numWrkList = [4, 12, 20]
+numWrkList = [20]
 numTrial = 20
 
 #Checks for real data
@@ -55,7 +55,7 @@ for numWkr in numWrkList:
 	simpleAvgWorkers = 0.0
 	
 	for i in range(numTrial):
-
+		print i
 		[incompleteExamples, imgIDx2ID, sampledGT] = \
 		modelCheck.subSample(data, groundTruth, numWkr)
 
@@ -98,7 +98,7 @@ for numWkr in numWrkList:
 	majCorrectRate[numWkr] = [majSumCorrect/numTrial, numWkr]
 	simpleCorrectRate[numWkr] = [simpleSumCorrect/numTrial, simpleAllSumCorrect/numTrial, simpleAvgWorkers/numTrial]
 
-	print(cubamCorrectRate[numWkr], cubamNoCVCorrectRate[numWkr], majCorrectRate[numWkr], simpleCorrectRate[numWkr])
+print(cubamCorrectRate, cubamNoCVCorrectRate, majCorrectRate, simpleCorrectRate)
 
 
 
