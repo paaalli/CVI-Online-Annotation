@@ -10,14 +10,17 @@ from SimpleAnnotationModel import *
 from cubam import Binary1dSignalModel, BinaryBiasModel
 from cubam.utils import majority_vote, read_data_file
 
+import time
+
 #   fileName = 'bluebirds/labels.yaml'
 dataDir = 'data/bluebirds'
 
 modelCheck = CheckCubamAnnotationModel()
 modelCheck.createDir(dataDir)
 
-cubamModel = CubamAnnotationModel(dataDir)
-cubamModelNoCV = CubamAnnotationModel(dataDir, mode = 'norm')
+cubamModel = CubamAnnotationModel(dataDir, stoppingRatio = 5)
+cubamModelNoCV = CubamAnnotationModel(dataDir, mode = 'norm', \
+		stoppingRatio = 4)
 simpleModel = SimpleAnnotationModel(dataDir)
 
 #numWrkList = [2,4,6,8,10,12,14,16,18,20]
@@ -69,38 +72,37 @@ for numWkr in numWrkList:
 		[cubamTotal, cubamAvg] = modelCheck.annotationStatistics(cubamLabels)
 		cubamAvgWorkers += cubamAvg
 
+		
 		#Cubam w/o CV
-		[cubamNoCVCompletedExamples, cubamNoCVInsufficientExamples, cubamNoCVLabels] = \
-		cubamModelNoCV.crowdSourceLabels(deepcopy(incompleteExamples), imgIDx2ID)
-		cubamNoCVSumCorrect += modelCheck.correctnessFactor(cubamNoCVCompletedExamples, sampledGT)
-		cubamNoCVAllSumCorrect += \
-		modelCheck.correctnessFactor(dict(cubamNoCVCompletedExamples.items() + cubamNoCVInsufficientExamples.items()), sampledGT)
+		# [cubamNoCVCompletedExamples, cubamNoCVInsufficientExamples, cubamNoCVLabels] = \
+		# cubamModelNoCV.crowdSourceLabels(deepcopy(incompleteExamples), imgIDx2ID)
+		# cubamNoCVSumCorrect += modelCheck.correctnessFactor(cubamNoCVCompletedExamples, sampledGT)
+		# cubamNoCVAllSumCorrect += \
+		# modelCheck.correctnessFactor(dict(cubamNoCVCompletedExamples.items() + cubamNoCVInsufficientExamples.items()), sampledGT)
+		# [cubamNoCVTotal, cubamNoCVAvg] = modelCheck.annotationStatistics(cubamNoCVLabels)
+		# cubamNoCVAvgWorkers += cubamNoCVAvg
 
-		[cubamNoCVTotal, cubamNoCVAvg] = modelCheck.annotationStatistics(cubamNoCVLabels)
-		cubamNoCVAvgWorkers += cubamNoCVAvg
+# 		#Simple model w/o CV
+# 		[simpleCompletedExamples, simpleInsufficientExamples, simpleLabels] = \
+# 		simpleModel.crowdSourceLabels(deepcopy(incompleteExamples), imgIDx2ID)
+# 		simpleSumCorrect += modelCheck.correctnessFactor(simpleCompletedExamples, sampledGT)
+# 		simpleAllSumCorrect += \
+# 		modelCheck.correctnessFactor(dict(simpleCompletedExamples.items() + simpleInsufficientExamples.items()), sampledGT)
 
-		#Simple model w/o CV
-		[simpleCompletedExamples, simpleInsufficientExamples, simpleLabels] = \
-		simpleModel.crowdSourceLabels(deepcopy(incompleteExamples), imgIDx2ID)
-		simpleSumCorrect += modelCheck.correctnessFactor(simpleCompletedExamples, sampledGT)
-		simpleAllSumCorrect += \
-		modelCheck.correctnessFactor(dict(simpleCompletedExamples.items() + simpleInsufficientExamples.items()), sampledGT)
+# 		[simpleTotal, simpleAvg] = modelCheck.annotationStatistics(simpleLabels)
+# 		simpleAvgWorkers += simpleAvg
 
-		[simpleTotal, simpleAvg] = modelCheck.annotationStatistics(simpleLabels)
-		simpleAvgWorkers += simpleAvg
+# 		#Majority vote
+# 		majCompletedExamples = majority_vote(incompleteExamples.copy()) 
+# 		majSumCorrect += modelCheck.correctnessFactor(majCompletedExamples, sampledGT)
 
-		#Majority vote
-		majCompletedExamples = majority_vote(incompleteExamples.copy()) 
-		majSumCorrect += modelCheck.correctnessFactor(majCompletedExamples, sampledGT)
+ 	cubamCorrectRate[numWkr] = [cubamSumCorrect/numTrial, cubamAllSumCorrect/numTrial, cubamAvgWorkers/numTrial]
+# 	cubamNoCVCorrectRate[numWkr] = [cubamNoCVSumCorrect/numTrial, cubamNoCVAllSumCorrect/numTrial, cubamNoCVAvgWorkers/numTrial]
+# 	majCorrectRate[numWkr] = [majSumCorrect/numTrial, numWkr]
+# 	simpleCorrectRate[numWkr] = [simpleSumCorrect/numTrial, simpleAllSumCorrect/numTrial, simpleAvgWorkers/numTrial]
 
-	cubamCorrectRate[numWkr] = [cubamSumCorrect/numTrial, cubamAllSumCorrect/numTrial, cubamAvgWorkers/numTrial]
-	cubamNoCVCorrectRate[numWkr] = [cubamNoCVSumCorrect/numTrial, cubamNoCVAllSumCorrect/numTrial, cubamNoCVAvgWorkers/numTrial]
-	majCorrectRate[numWkr] = [majSumCorrect/numTrial, numWkr]
-	simpleCorrectRate[numWkr] = [simpleSumCorrect/numTrial, simpleAllSumCorrect/numTrial, simpleAvgWorkers/numTrial]
-
-print(cubamCorrectRate, cubamNoCVCorrectRate, majCorrectRate, simpleCorrectRate)
-
-
+# print(cubamCorrectRate, cubamNoCVCorrectRate, majCorrectRate, simpleCorrectRate)
+print cubamCorrectRate
 
 
 

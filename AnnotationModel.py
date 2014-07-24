@@ -107,7 +107,7 @@ class AnnotationModel(object):
                     model = self.trainComputerVision(completedExamples, \
                             imgIDx2ID)
                     cvProb = self.computerVisionPrediction(model, \
-                            incompleteExamples, imgIDx2ID)
+                            completedExamples, imgIDx2ID)
             
 
         return [completedExamples, insufficientExamples, labels]
@@ -120,10 +120,7 @@ class AnnotationModel(object):
         for imgIDx in completedExamples:
             imgID = imgIDx2ID[imgIDx]
             y.append(completedExamples[imgIDx])
-            x.append(np.concatenate((self.features[str(imgID)], \
-                    self.scores[str(imgID)]), axis = 0))
-
-        print completedExamples
+            x.append(self.features[str(imgID)])
 
         linearSVC.fit(x,y)
 
@@ -139,7 +136,7 @@ class AnnotationModel(object):
 
     #ATTENTION: When introducing non binary classes, change else sentence
     #to dimension of classes.
-    def computerVisionPrediction(self, model,incompleteExamples, imgIDx2ID):
+    def computerVisionPrediction(self, model, completedExamples, imgIDx2ID):
 
         features = cPickle.load(open(self.dirName + \
                 '/featureVectors.pickle', 'r'))
@@ -147,13 +144,13 @@ class AnnotationModel(object):
         scores = cPickle.load(open(self.dirName + '/scores.pickle', 'r'))
         cvProb = []
         for imgIDx in imgIDx2ID:
-            if imgIDx in incompleteExamples:
+            if imgIDx not in completedExamples:
                 imgID = imgIDx2ID[imgIDx]
-                cvProb.append(model.predict_proba(np.concatenate \
-                        ((self.features[str(imgID)], \
-                        self.scores[str(imgID)]), axis = 0))[0])
+                cvProb.append(model.predict_proba \
+                    (self.features[str(imgID)])[0])
+            #TODO: Should I insert the probabilities the images finished with?
             else:
-                cvProb.append([1.0, 1.0])
+                cvProb.append([0.5, 0.5])
        
         return cvProb
 

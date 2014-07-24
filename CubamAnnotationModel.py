@@ -3,6 +3,7 @@ from cubam.utils import read_data_file
 
 from AnnotationModel import *
 
+import time
 
 class CubamAnnotationModel(AnnotationModel):
     
@@ -42,6 +43,7 @@ class CubamAnnotationModel(AnnotationModel):
             x[imgID].append(int(x[imgID][0] > 0))
 
         predictions = self.__calcProbability(x)
+
         return predictions 
 
     #calculates probability for each distribution value of x.
