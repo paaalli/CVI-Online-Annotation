@@ -1,0 +1,2 @@
+CheckAnnotationModel.subSample er gallað. Þarf að tryggja að hver mynd hafi nrWorkers, 
+eins og er er það ekki tryggt.
