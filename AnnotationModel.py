@@ -8,10 +8,10 @@ from math import log, exp, sqrt, pow, pi
 
 class AnnotationModel(object):
 
-    def __init__(self, dirName, stoppingRatio, mode):
+    def __init__(self, dirName, stoppingRatio, mode, svc = None):
         
         self.dirName = dirName
-        self. stoppingRatio = stoppingRatio
+        self.stoppingRatio = stoppingRatio
 
         assert (mode == 'norm' or mode == 'cv'), "Mode is either 'norm' or 'cv'"
         
@@ -20,6 +20,12 @@ class AnnotationModel(object):
         if (self.mode == 'cv'):
             self.features = cPickle.load(open(self.dirName + '/featureVectors.pickle', 'r'))
             self.scores = cPickle.load(open(self.dirName + '/scores.pickle', 'r'))
+            if svc:
+                self.svc = svc
+                self.svcFlag = True
+            else:
+                self.svc = SVC(kernel = 'linear', probability = True, max_iter = 40)
+                self.svcFlag = False
 
     #stoppingRatio: stoppingRatio for sequential probability ratio test
 
@@ -78,9 +84,9 @@ class AnnotationModel(object):
 
         for imgID in incompleteExamples:
             labels[imgID] = {}
-        [insufficientExamples, labels] = self.getOneNewWorkerLabelPerImage \
-                (incompleteExamples,insufficientExamples, labels)
 
+        [insufficientExamples, labels] = self.getOneNewWorkerLabelPerImage\
+                (incompleteExamples, insufficientExamples, labels)
         while len(incompleteExamples) != 0:
 
             [insufficientExamples, labels] = \
@@ -99,35 +105,29 @@ class AnnotationModel(object):
                 del incompleteExamples[imgID]
  
             #If no new examples have finished, no need to train/predict
-            if (self.mode == 'cv' and not len(newCompletedExamples) == 0):
+            if (self.mode == 'cv' and (not len(newCompletedExamples) == 0 or self.svcFlag)):
                 tmp = sum([completedExamples[i] for i in completedExamples])
                 
-                #To train we need 2 classes
-                if (tmp >= 2 and tmp <= (len(completedExamples) - 2)):
-                    model = self.trainComputerVision(completedExamples, \
+                #To train we need 2 classes(2 of each at least for training/validation)
+                if ((tmp >= 2 and tmp <= (len(completedExamples) - 2)) or self.svcFlag):
+                    self.trainComputerVision(completedExamples, \
                             imgIDx2ID)
-                    cvProb = self.computerVisionPrediction(model, \
-                            incompleteExamples, imgIDx2ID)
+                    cvProb = self.computerVisionPrediction(completedExamples, imgIDx2ID)
             
 
         return [completedExamples, insufficientExamples, labels]
 
     def trainComputerVision(self, completedExamples, imgIDx2ID):
 
-        linearSVC = SVC(kernel = 'linear', probability = True, max_iter = 30)
         y = []
         x = []
         for imgIDx in completedExamples:
             imgID = imgIDx2ID[imgIDx]
             y.append(completedExamples[imgIDx])
-            x.append(np.concatenate((self.features[str(imgID)], \
-                    self.scores[str(imgID)]), axis = 0))
+            x.append(self.features[str(imgID)])
 
-        print completedExamples
+        self.svc.fit(x,y)
 
-        linearSVC.fit(x,y)
-
-        return linearSVC
 
     #predict_proba returns a list of lists of length nrImg. Sublists have
     #probabilities for all possible values of ground truth.
@@ -139,7 +139,7 @@ class AnnotationModel(object):
 
     #ATTENTION: When introducing non binary classes, change else sentence
     #to dimension of classes.
-    def computerVisionPrediction(self, model,incompleteExamples, imgIDx2ID):
+    def computerVisionPrediction(self, completedExamples, imgIDx2ID):
 
         features = cPickle.load(open(self.dirName + \
                 '/featureVectors.pickle', 'r'))
@@ -147,20 +147,19 @@ class AnnotationModel(object):
         scores = cPickle.load(open(self.dirName + '/scores.pickle', 'r'))
         cvProb = []
         for imgIDx in imgIDx2ID:
-            if imgIDx in incompleteExamples:
+            if imgIDx not in completedExamples:
                 imgID = imgIDx2ID[imgIDx]
-                cvProb.append(model.predict_proba(np.concatenate \
-                        ((self.features[str(imgID)], \
-                        self.scores[str(imgID)]), axis = 0))[0])
+                cvProb.append(self.svc.predict_proba \
+                    (self.features[str(imgID)])[0])
+            #TODO: Should I insert the probabilities the images finished with?
             else:
-                cvProb.append([1.0, 1.0])
+                cvProb.append([0.5, 0.5])
        
         return cvProb
 
 
     def getOneNewWorkerLabelPerImage(self, incompleteExamples, \
             insufficientExamples, labels):
-
 
         for imgID in incompleteExamples:
             if len(incompleteExamples[imgID]) != 0:
@@ -177,5 +176,4 @@ class AnnotationModel(object):
         for x in insufficientExamples:
             if x in incompleteExamples:
                 del incompleteExamples[x]
-
         return [insufficientExamples, labels]

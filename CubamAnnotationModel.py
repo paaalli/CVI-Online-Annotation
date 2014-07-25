@@ -3,6 +3,7 @@ from cubam.utils import read_data_file
 
 from AnnotationModel import *
 
+import time
 
 class CubamAnnotationModel(AnnotationModel):
     
@@ -15,54 +16,64 @@ class CubamAnnotationModel(AnnotationModel):
 
     #flag = 0 or 1, 0 means we're getting annotations from an already labelled dataset
     #1 means we're getting annotations from MTTurk.
-    def __init__(self, dirName, stoppingRatio = 5, mode = 'cv', flag = 0):
+    def __init__(self, dirName, stoppingRatio = 5, mode = 'cv', flag = 0, \
+                debugFile = None, svc = None):
         
         self.flag = flag
         self.cubamDataFile = '%s/data.txt' % dirName
 
-        super(CubamAnnotationModel, self).__init__(dirName, stoppingRatio, mode)
+        super(CubamAnnotationModel, self).__init__(dirName, stoppingRatio, mode, \
+                svc)
 
+        self.file = None
+
+        if debugFile:
+            self.debugFile = debugFile
+            f = open(self.debugFile, 'w')
+            f.write('')
+            f.close()
 
 
     def optimiseProbability(self, labels, cvProb = None):
         
         self.__saveData(labels)
         model = Binary1dSignalModel(filename = self.cubamDataFile)
-
-        if(cvProb != None):
-            model.optimize_param(numIter=15)
+        if cvProb:
+            model.optimize_param(numIter=15) 
             model.optimize_param_cv(cvProb, numIter=15)
         else:
             model.optimize_param()
+        combProb = model.get_image_prob()
 
-        x = model.get_image_param()
-        #If xi > 0 we estimate that the label is y == 1, otherwise  y == 0
-        #we append the label estimation to the x value.
-        for imgID in x:
-            x[imgID].append(int(x[imgID][0] > 0))
+        if self.debugFile:                
+            #String vectors to print to html file. Shows probabilities of p(z=1|..)
+            cvStr = ''
+            combStr = ''
+            for imgID in combProb:
+                if cvProb:
+                    cvStr += "%0.2f   " % cvProb[imgID][1]
+                else:
+                    cvStr += "0.00   "
+                combStr += "%0.2f   " % combProb[imgID][0]
 
-        predictions = self.__calcProbability(x)
-        return predictions 
+            f = open(self.debugFile, 'a')
+            f.write(cvStr + '\n' + combStr + '\n')
+            f.close()
 
-    #calculates probability for each distribution value of x.
+        #If xi > 0.5 we estimate that the label is y == 1, otherwise  y == 0
+        #and fix the probability to represent p(z=0|x)
+        #We append the label estimation to the x value.
+        predictions = combProb
 
-    #p(z|x) = p(x|z)/(p(x|!z) + p(x|z)
-    # where p(x|z) = exp(-(x-1)^2/(2*theta^2)/(sqrt(2pi)*theta)
-    # and p(x|!z) = exp(-(x+1)^2/(2*theta^2)/(sqrt(2pi)*theta)
-    def __calcProbability(self, x):
-        
-        for imgID in x:
-            p1 = exp(-(pow(x[imgID][0] - 1, 2)/(2*pow(self.theta,2)))) \
-                / (sqrt(2*pi)*0.8)
-
-            p2 = exp(-(pow(x[imgID][0] + 1, 2)/(2*pow(self.theta,2)))) \
-                / (sqrt(2*pi)*0.8)
-
-            if x[imgID][1]:
-                x[imgID][0] = p1/(p1+p2)
+        for imgID in predictions:
+            if predictions[imgID][0] > 0.5:
+                predictions[imgID].append(1)
             else:
-                x[imgID][0] = p2/(p1+p2)
-        return x
+                predictions[imgID][0] = 1 - predictions[imgID][0]
+                predictions[imgID].append(0)
+        
+
+        return predictions
 
     def __saveData(self, labels):
 

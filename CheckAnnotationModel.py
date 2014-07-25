@@ -54,8 +54,6 @@ class CheckAnnotationModel():
     def subSample(self, data, groundTruth, nrWorkers):
         
         wrkIDs = set(wrkID for imgID in data for wrkID in data[imgID])
-        if (nrWorkers < len(wrkIDs)):
-            wrkIDs = set(random.sample(wrkIDs, nrWorkers))
         wrkId2Idx = dict((id, idx) for (idx, id) in enumerate(wrkIDs))
 
         sampledData = dict()
@@ -65,9 +63,12 @@ class CheckAnnotationModel():
             sampledData[i] = dict()
             sampledGT[i] = groundTruth[imgID]
             imgIDx2ID[i] = imgID
+            #try: 
+            imgWrkIDs =  random.sample(set(data[imgID]), nrWorkers)
             for wrkID in list(data[imgID]):
-                if wrkID in wrkIDs:
+                if wrkID in imgWrkIDs:
                     sampledData[i][wrkId2Idx[wrkID]] = data[imgID][wrkID]
-
+            #except Exception:
+                #print "You can't use more annotations than are available"
         return [sampledData, imgIDx2ID, sampledGT]
 

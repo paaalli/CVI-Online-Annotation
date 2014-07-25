@@ -18,7 +18,6 @@ data = modelCheck.formatExamples(data)
 dirName = 'data/bluebirds'
 features = cPickle.load(open(dirName + '/featureVectors.pickle', 'r'))
 scores = cPickle.load(open(dirName + '/scores.pickle', 'r'))
-
 #print features
 
 numTrials = 40
@@ -82,7 +81,7 @@ for numImg in range(10, len(possibleTrainIDs), 10):
 
         predProb = linearSVC.predict_proba(x)
         pred = [list(i).index(max(i)) for i in predProb]
-        #print pred
+        print predProb
         print zip(predProb, y)
         
         a = {}
